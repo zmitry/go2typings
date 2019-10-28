@@ -1,53 +1,13 @@
 # Golang structs to typescript typings convertor
 
-Here is the cases we handle with this lib
+## Example
 
-```golang
-package userapi
-type M struct {
-	Username string `json:"Username2"`
- }
- type T struct {
- 	M
- 	Name []map[string]struct {
- 		test string
- 	} `json:"name"`
+[example.main.go](https://github.com/zmitry/go2typings/blob/master/example/main.go)
 
-  // Array<Record<string, string>>
-  lastname []map[string]string `json:"lastname"`
-  surname  []map[string][]*M   `json:"surname"`
-}
-```
+## How to setup
 
-output
-
-```ts
-export namespace userapi {
-  //userapi.Root
-  export interface Root {
-    info: string;
-  }
-  //userapi.M
-  export interface M extends Root {
-    Username2: string;
-  }
-  //.
-  export interface NameT {}
-  //userapi.T
-  export interface T extends M {
-    name: Array<Record<string, main.NameT>> | null;
-    Name2: main.NameT;
-    lastname: Array<Record<string, string>> | null;
-    surname: Array<Record<string, Array<main.M | null> | null>> | null;
-  }
-}
-```
-
-to see working example go to /example
-
-# How to setup
-
-create go file with the following code
+- create go file with the code bellow
+- run this code with `go run`
 
 ```golang
 package main
@@ -77,7 +37,7 @@ func main() {
 
 # Custom tags
 
-we support custom tag `ts` it supports the following syntax
+we support custom tag `ts` it has the following syntax
 
 ```
 type M struct {
@@ -94,7 +54,7 @@ tsTag[1] = "optional"|"no-null"|"null"
 
 see field.go for more info
 
-# TODO:
+## TODO:
 
 - add tests
 - add customization for intendation and output format
