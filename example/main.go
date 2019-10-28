@@ -10,7 +10,7 @@ func main() {
 	s.Add(types.T{})
 	s.Add(types.User{})
 
-	err := s.GenerateFile("./test.ts")
+	err := s.GenerateFile("./types.ts")
 	if err != nil {
 		panic(err)
 	}

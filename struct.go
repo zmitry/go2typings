@@ -16,9 +16,8 @@ type Struct struct {
 	T             reflect.Type
 }
 
-const template = `    //%s.%s
-	export interface %s %s{
-%s	}
+const template = `  //%s.%s
+  export interface %s %s{%s}
 `
 
 func (s *Struct) RenderTo(opts *Options, w io.Writer) (err error) {
@@ -28,9 +27,12 @@ func (s *Struct) RenderTo(opts *Options, w io.Writer) (err error) {
 	}
 
 	fields := ""
-	for _, field := range s.Fields {
+	for n, field := range s.Fields {
 		name, t := Type(field)
-		fields += fmt.Sprintf("       %s: %s;\n", name, t)
+		fields += fmt.Sprintf("\n    %s: %s;", name, t)
+		if n == len(s.Fields)-1 {
+			fields += "\n  "
+		}
 	}
 	_, err = fmt.Fprintf(w, template, s.T.PkgPath(), s.T.Name(), s.Name, extendsType, fields)
 	return
