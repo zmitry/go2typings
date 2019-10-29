@@ -81,7 +81,6 @@ func (s *StructToTS) visitType(t reflect.Type, name, namespace string) {
 	case k == reflect.Ptr:
 		t = indirect(t)
 		s.visitType(t, name, namespace)
-		break
 	case k == reflect.Struct:
 		if isDate(t) {
 			break
@@ -90,18 +89,11 @@ func (s *StructToTS) visitType(t reflect.Type, name, namespace string) {
 			name = t.Name()
 		}
 		s.addType(t, name, namespace)
-		break
-	case isNumber(k):
-	case k == reflect.String:
-	case k == reflect.Bool:
-		break
 	case k == reflect.Slice || k == reflect.Array:
 		s.visitType(t.Elem(), name, namespace)
-		break
 	case k == reflect.Map:
 		s.visitType(t.Elem(), name, namespace)
 		s.visitType(t.Key(), name, namespace)
-		break
 	}
 }
 
