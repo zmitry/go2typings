@@ -2,6 +2,7 @@ package go2typings
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go/constant"
 	"go/types"
@@ -89,19 +90,23 @@ type TypescriptEnumMember struct {
 	Comment string
 }
 
-func getEnumValues(pkg, typename string) ([]constant.Value, error) {
+func getEnumValues(pkgName, typename string) ([]constant.Value, error) {
 	res, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes,
-	}, pkg)
+	}, pkgName)
 	if err != nil {
 		return nil, err
 	}
 	enums := []constant.Value{}
-	pgk := res[0].Types.Scope()
-	for _, name := range res[0].Types.Scope().Names() {
-		v := pgk.Lookup(name)
-		if v != nil && v.Exported() && path.Base(v.Type().String()) == typename {
-			// spew.Dump(v, v.Name(), v.Type().Underlying())
+	if len(res) > 1 {
+		return nil, errors.New("more than one result package")
+	}
+	pkg := res[0].Types.Scope()
+	for _, name := range pkg.Names() {
+		v := pkg.Lookup(name)
+		// It has format similar to this "type.T".
+		baseTypename := path.Base(v.Type().String())
+		if v != nil && baseTypename == typename {
 			switch t := v.(type) {
 			case *types.Const:
 				{
@@ -247,21 +252,22 @@ func (s *StructToTS) RenderTo(w io.Writer) (err error) {
 		return err
 	}
 	for i, st := range s.structs {
-		if st.Type == Enum {
-			err := st.RenderEnum(s.opts, w)
-			if err != nil {
-				return err
-			}
-			continue
-		}
 		s.setStructTypes(st)
 		if inArray(i-1, s.structs) && s.structs[i-1].Namespace != st.Namespace {
 			if _, err = fmt.Fprintf(w, "export namespace %s {\n", st.Namespace); err != nil {
 				return err
 			}
 		}
-		if err = st.RenderTo(s.opts, w); err != nil {
-			return err
+		if st.Type == Enum {
+			err := st.RenderEnum(s.opts, w)
+			if err != nil {
+				return err
+			}
+			continue
+		} else {
+			if err = st.RenderTo(s.opts, w); err != nil {
+				return err
+			}
 		}
 		if inArray(i+1, s.structs) && s.structs[i+1].Namespace != st.Namespace {
 			if _, err = fmt.Fprint(w, "}\n\n"); err != nil {
