@@ -12,7 +12,7 @@ import (
 	"reflect"
 	"strings"
 
-	"golang.org/x/tools/go/loader"
+	"golang.org/x/tools/go/packages"
 )
 
 type Options struct {
@@ -90,14 +90,16 @@ type TypescriptEnumMember struct {
 }
 
 func getEnumValues(pkg, typename string) ([]constant.Value, error) {
-	conf := loader.Config{}
-	conf.Import(pkg)
-	program, err := conf.Load()
+	res, err := packages.Load(&packages.Config{
+		Mode: packages.NeedTypes,
+	}, pkg)
 	if err != nil {
 		return nil, err
 	}
 	enums := []constant.Value{}
-	for _, v := range program.Package(pkg).Defs {
+	pgk := res[0].Types.Scope()
+	for _, name := range res[0].Types.Scope().Names() {
+		v := pgk.Lookup(name)
 		if v != nil && v.Exported() && path.Base(v.Type().String()) == typename {
 			// spew.Dump(v, v.Name(), v.Type().Underlying())
 			switch t := v.(type) {

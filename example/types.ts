@@ -2,7 +2,7 @@
 /* eslint-disable */
 export namespace types {
   //github.com/zmitry/go2typings/example/types.WeekDay
-  export type WeekDay = "sun" | "mon"
+  export type WeekDay = "mon" | "sun"
   //github.com/zmitry/go2typings/example/types.WeekDay2
   export type WeekDay2 = "3" | "4"
   //github.com/zmitry/go2typings/example/types.T
