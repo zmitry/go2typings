@@ -1,17 +1,14 @@
 /* tslint:disable */
 /* eslint-disable */
 export namespace types {
-  //github.com/zmitry/go2typings/example/types.M
-  export interface M {
-    Username2: string;
-  }
-  //.
-  export interface NameT {}
+  //github.com/zmitry/go2typings/example/types.WeekDay
+  export type WeekDay = "sun" | "mon"
+  //github.com/zmitry/go2typings/example/types.WeekDay2
+  export type WeekDay2 = "3" | "4"
   //github.com/zmitry/go2typings/example/types.T
-  export interface T extends M {
-    name: Array<Record<string, types.NameT>> | null;
-    lastname: Array<Record<string, string>> | null;
-    surname: Array<Record<string, Array<types.M | null> | null>> | null;
+  export interface T {
+    weekday: types.WeekDay;
+    weekday2: types.WeekDay2;
   }
   //github.com/zmitry/go2typings/example/types.UserTag
   export interface UserTag {

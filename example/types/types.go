@@ -1,18 +1,40 @@
 package types
 
+import "fmt"
+
 // TODO write testcase for this
 type M struct {
 	Username string `json:"Username2"`
 }
-type T struct {
-	M
-	Name []map[string]struct {
-		test string
-	} `json:"name"`
 
-	// Array<Record<string, string>>
-	Lastname []map[string]string `json:"lastname"`
-	Surname  []map[string][]*M   `json:"surname"`
+type WeekDay int
+
+const (
+	SUNDAY WeekDay = 1
+	MONDAY WeekDay = 2
+)
+
+type WeekDay2 string
+
+const (
+	A  WeekDay2 = "3"
+	A2 WeekDay2 = "4"
+)
+
+func (e WeekDay) String() string {
+	switch e {
+	case SUNDAY:
+		return "sun"
+	case MONDAY:
+		return "mon"
+	default:
+		return fmt.Sprintf("%d", int(e))
+	}
+}
+
+type T struct {
+	W  WeekDay  `json:"weekday"`
+	W2 WeekDay2 `json:"weekday2"`
 }
 
 type UserTag struct {
