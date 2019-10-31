@@ -3,7 +3,8 @@ package go2typings
 import (
 	"encoding/json"
 	"fmt"
-	"go/ast"
+	"go/constant"
+	"go/types"
 	"io"
 	"os"
 	"path"
@@ -11,7 +12,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"golang.org/x/tools/go/loader"
 )
 
@@ -62,8 +62,12 @@ func typeToString(t reflect.Type, getTypeName GetTypeName) string {
 			return "string"
 		}
 		return getTypeName(t)
+	case isNumber(k) && isEnum(t):
+		return getTypeName(t)
 	case isNumber(k):
 		return "number"
+	case k == reflect.String && isEnum(t):
+		return getTypeName(t)
 	case k == reflect.String:
 		return "string"
 	case k == reflect.Bool:
@@ -85,54 +89,26 @@ type TypescriptEnumMember struct {
 	Comment string
 }
 
-func extractEnumTypes(enums map[string][]TypescriptEnumMember) func(node ast.Node) bool {
-	return func(node ast.Node) bool {
-		if ts, ok := node.(*ast.TypeSpec); ok {
-			enumName := ts.Name.Name
-			if _, ok := ts.Type.(*ast.Ident); ok {
-				enums[enumName] = make([]TypescriptEnumMember, 0)
-			}
-
-			return false
-		}
-
-		return true
+func getEnumValues(pkg, typename string) ([]constant.Value, error) {
+	conf := loader.Config{}
+	conf.Import(pkg)
+	program, err := conf.Load()
+	if err != nil {
+		return nil, err
 	}
-}
-
-func extractEnumValues(enums map[string][]TypescriptEnumMember) func(node ast.Node) bool {
-	return func(node ast.Node) bool {
-		if vs, ok := node.(*ast.ValueSpec); ok {
-			fmt.Println(vs.Names, vs.Values)
-			spew.Dump(vs.Names[0])
-
-			if len(vs.Names) < 1 || len(vs.Values) < 1 {
-				// TODO: add logging
-				return false
-			}
-
-			var enumName string
-			if tp, ok := vs.Type.(*ast.Ident); ok {
-				enumName = tp.Name
-			} else {
-				return false
-			}
-			if members, ok := enums[enumName]; ok {
-				name := vs.Names[0].Name
-				value := vs.Values[0]
-				if lit, ok := value.(*ast.BasicLit); ok {
-					members = append(members, TypescriptEnumMember{
-						Name:  name,
-						Value: lit.Value,
-					})
+	enums := []constant.Value{}
+	for _, v := range program.Package(pkg).Defs {
+		if v != nil && v.Exported() && path.Base(v.Type().String()) == typename {
+			// spew.Dump(v, v.Name(), v.Type().Underlying())
+			switch t := v.(type) {
+			case *types.Const:
+				{
+					enums = append(enums, t.Val())
 				}
-				enums[enumName] = members
 			}
-			return false
 		}
-
-		return true
 	}
+	return enums, nil
 }
 
 func (s *StructToTS) visitType(t reflect.Type, name, namespace string) {
@@ -154,37 +130,59 @@ func (s *StructToTS) visitType(t reflect.Type, name, namespace string) {
 	case k == reflect.Map:
 		s.visitType(t.Elem(), name, namespace)
 		s.visitType(t.Key(), name, namespace)
-	case isNumber(k):
+	case (isNumber(k) || k == reflect.String) && isEnum(t):
 		{
-			pkg := t.PkgPath()
-			if pkg != "" {
-				conf := loader.Config{}
-				conf.Import(pkg)
-				program, err := conf.Load()
-				if err != nil {
-					return
-				}
-				for _, v := range program.Package(pkg).Types {
-					spew.Dump(v, v.Value)
-
-				}
-				// enums := make(map[string][]TypescriptEnumMember)
-				// traverse := extractEnumTypes(enums)
-				// for id, _ := range program.InitialPackages()[0].Scopes {
-				// 	ast.Inspect(id, traverse)
-				// }
-				// traverse2 := extractEnumValues(enums)
-				// for id, _ := range program.InitialPackages()[0].Scopes {
-				// 	ast.Inspect(id, traverse2)
-				// }
-				// fmt.Println(enums)
-				// return
-				// // fmt.Println(t.Name(), pkg, res.Scope().Names())
-
-			}
+			s.addTypeEnum(t, "", "")
 		}
 	}
 
+}
+
+func isEnum(t reflect.Type) bool {
+	return t.PkgPath() != ""
+}
+
+func getEnumStringValues(t reflect.Type) []string {
+	pkg := t.PkgPath()
+	values, err := getEnumValues(pkg, t.String())
+	if err != nil {
+		panic(err)
+	}
+	enumStrValues := []string{}
+	for _, v := range values {
+		reflectValue := reflect.New(t).Elem()
+		newVal := constant.Val(v)
+		switch t.Kind() {
+		case reflect.String:
+			reflectValue.SetString(constant.StringVal(v))
+		case reflect.Int:
+			value, ok := constant.Int64Val(v)
+			if !ok {
+				panic("failed to convert")
+			}
+			reflectValue.SetInt(value)
+		default:
+			fmt.Println(reflect.TypeOf(newVal), newVal, reflectValue, v.Kind(), t)
+			panic("unknown type")
+		}
+		strVal := fmt.Sprintf("%v", reflectValue)
+
+		enumStrValues = append(enumStrValues, strVal)
+	}
+	return enumStrValues
+}
+
+func (s *StructToTS) addTypeEnum(t reflect.Type, name, namespace string) (out *Struct) {
+	t = indirect(t)
+	if out = s.seen[t]; out != nil {
+		return out
+	}
+	out = MakeStruct(t, name, namespace)
+	out.Values = getEnumStringValues(t)
+	out.Type = Enum
+	s.seen[t] = out
+	s.structs = append(s.structs, out)
+	return
 }
 
 func (s *StructToTS) addType(t reflect.Type, name, namespace string) (out *Struct) {
@@ -194,24 +192,10 @@ func (s *StructToTS) addType(t reflect.Type, name, namespace string) (out *Struc
 	if out = s.seen[t]; out != nil {
 		return out
 	}
-
-	if name == "" {
-		name = t.Name()
-	}
-	if namespace == "" {
-		namespace = path.Base(t.PkgPath())
-	}
-
-	fullName := capitalize(name)
-	out = &Struct{
-		Namespace:     namespace,
-		Name:          fullName,
-		ReferenceName: namespace + "." + fullName,
-		Fields:        make([]*Field, 0, t.NumField()),
-		InheritedType: []string{},
-		T:             t,
-	}
-
+	out = MakeStruct(t, name, namespace)
+	fullName := out.Name
+	out.Type = RegularType
+	out.Fields = make([]*Field, 0, t.NumField())
 	s.seen[t] = out
 	for i := 0; i < t.NumField(); i++ {
 		var (
@@ -261,6 +245,13 @@ func (s *StructToTS) RenderTo(w io.Writer) (err error) {
 		return err
 	}
 	for i, st := range s.structs {
+		if st.Type == Enum {
+			err := st.RenderEnum(s.opts, w)
+			if err != nil {
+				return err
+			}
+			continue
+		}
 		s.setStructTypes(st)
 		if inArray(i-1, s.structs) && s.structs[i-1].Namespace != st.Namespace {
 			if _, err = fmt.Fprintf(w, "export namespace %s {\n", st.Namespace); err != nil {
