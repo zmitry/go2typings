@@ -3,12 +3,16 @@ package go2typings
 import (
 	"encoding/json"
 	"fmt"
+	"go/ast"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
+
+	"github.com/davecgh/go-spew/spew"
+	"golang.org/x/tools/go/loader"
 )
 
 type Options struct {
@@ -75,6 +79,62 @@ func typeToString(t reflect.Type, getTypeName GetTypeName) string {
 	return t.String()
 }
 
+type TypescriptEnumMember struct {
+	Name    string
+	Value   string
+	Comment string
+}
+
+func extractEnumTypes(enums map[string][]TypescriptEnumMember) func(node ast.Node) bool {
+	return func(node ast.Node) bool {
+		if ts, ok := node.(*ast.TypeSpec); ok {
+			enumName := ts.Name.Name
+			if _, ok := ts.Type.(*ast.Ident); ok {
+				enums[enumName] = make([]TypescriptEnumMember, 0)
+			}
+
+			return false
+		}
+
+		return true
+	}
+}
+
+func extractEnumValues(enums map[string][]TypescriptEnumMember) func(node ast.Node) bool {
+	return func(node ast.Node) bool {
+		if vs, ok := node.(*ast.ValueSpec); ok {
+			fmt.Println(vs.Names, vs.Values)
+			spew.Dump(vs.Names[0])
+
+			if len(vs.Names) < 1 || len(vs.Values) < 1 {
+				// TODO: add logging
+				return false
+			}
+
+			var enumName string
+			if tp, ok := vs.Type.(*ast.Ident); ok {
+				enumName = tp.Name
+			} else {
+				return false
+			}
+			if members, ok := enums[enumName]; ok {
+				name := vs.Names[0].Name
+				value := vs.Values[0]
+				if lit, ok := value.(*ast.BasicLit); ok {
+					members = append(members, TypescriptEnumMember{
+						Name:  name,
+						Value: lit.Value,
+					})
+				}
+				enums[enumName] = members
+			}
+			return false
+		}
+
+		return true
+	}
+}
+
 func (s *StructToTS) visitType(t reflect.Type, name, namespace string) {
 	k := t.Kind()
 	switch {
@@ -94,7 +154,37 @@ func (s *StructToTS) visitType(t reflect.Type, name, namespace string) {
 	case k == reflect.Map:
 		s.visitType(t.Elem(), name, namespace)
 		s.visitType(t.Key(), name, namespace)
+	case isNumber(k):
+		{
+			pkg := t.PkgPath()
+			if pkg != "" {
+				conf := loader.Config{}
+				conf.Import(pkg)
+				program, err := conf.Load()
+				if err != nil {
+					return
+				}
+				for _, v := range program.Package(pkg).Types {
+					spew.Dump(v, v.Value)
+
+				}
+				// enums := make(map[string][]TypescriptEnumMember)
+				// traverse := extractEnumTypes(enums)
+				// for id, _ := range program.InitialPackages()[0].Scopes {
+				// 	ast.Inspect(id, traverse)
+				// }
+				// traverse2 := extractEnumValues(enums)
+				// for id, _ := range program.InitialPackages()[0].Scopes {
+				// 	ast.Inspect(id, traverse2)
+				// }
+				// fmt.Println(enums)
+				// return
+				// // fmt.Println(t.Name(), pkg, res.Scope().Names())
+
+			}
+		}
 	}
+
 }
 
 func (s *StructToTS) addType(t reflect.Type, name, namespace string) (out *Struct) {
