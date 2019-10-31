@@ -24,7 +24,7 @@ type Root struct {
 }
 
 func main() {
-	s := go2ts.New(&go2ts.Options{})
+	s := go2ts.New()
 	s.Add(types.T{})
 	s.Add(types.User{})
 
