@@ -59,5 +59,4 @@ see field.go for more info
 - add tests
 - add customization for intendation and output format
 ## Tradeoffs
-- It doesn't seem possible to handle golang enums in a proper way so we decided to move that to user space
 - This package designed to be "out of the box" so we don't allow to much custimization to not complicate initial coniguration
