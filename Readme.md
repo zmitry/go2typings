@@ -53,10 +53,3 @@ tsTag[1] = "optional"|"no-null"|"null"
 ```
 
 see field.go for more info
-
-## TODO:
-
-- add tests
-- add customization for intendation and output format
-## Tradeoffs
-- This package designed to be "out of the box" so we don't allow to much custimization to not complicate initial coniguration
