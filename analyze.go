@@ -90,17 +90,32 @@ type TypescriptEnumMember struct {
 	Comment string
 }
 
-func getEnumValues(pkgName, typename string) ([]constant.Value, error) {
+var cache = map[string][]*packages.Package{}
+
+func getPackages(pkgName string) ([]*packages.Package, error) {
+	if len(cache[pkgName]) > 0 {
+		return cache[pkgName], nil
+	}
 	res, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes,
 	}, pkgName)
+
+	if err != nil {
+		return nil, err
+	}
+	if len(res) > 1 {
+		return nil, errors.New("more than one result package")
+	}
+	cache[pkgName] = res
+	return res, nil
+}
+
+func getEnumValues(pkgName, typename string) ([]constant.Value, error) {
+	res, err := getPackages(pkgName)
 	if err != nil {
 		return nil, err
 	}
 	enums := []constant.Value{}
-	if len(res) > 1 {
-		return nil, errors.New("more than one result package")
-	}
 	pkg := res[0].Types.Scope()
 	for _, name := range pkg.Names() {
 		v := pkg.Lookup(name)
