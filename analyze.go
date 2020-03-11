@@ -48,6 +48,23 @@ func (s *StructToTS) AddWithName(v interface{}, name string) *Struct {
 	return s.addType(t, name, "")
 }
 
+var cache = map[string][]*packages.Package{}
+
+func getPackages(pkgName string) ([]*packages.Package, error) {
+	if len(cache[pkgName]) > 0 {
+		return cache[pkgName], nil
+	}
+	res, err := packages.Load(&packages.Config{
+		Mode: packages.NeedTypes,
+	}, pkgName)
+
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(pkgName)
+	cache[pkgName] = res
+	return res, nil
+}
 func getEnumValues(pkgName, typename string) ([]constant.Value, error) {
 	res, err := getPackages(pkgName)
 	if err != nil {
