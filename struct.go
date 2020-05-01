@@ -23,7 +23,7 @@ type Struct struct {
 	Name          string
 	Fields        []*Field
 	InheritedType []string
-	Values        []string
+	Values        []reflect.Value
 	T             reflect.Type
 }
 
@@ -76,7 +76,18 @@ func (s *Struct) RenderTo(opts *Options, w io.Writer) (err error) {
 func (s *Struct) RenderEnum(opts *Options, w io.Writer) (err error) {
 	union := ""
 	for i, v := range s.Values {
-		union += strconv.Quote(v)
+		k := v.Type().Kind()
+		switch k {
+		case reflect.String:
+			union += strconv.Quote(v.String())
+		case reflect.Int:
+			_, hasToString := v.Type().MethodByName("String")
+			if hasToString {
+				union += strconv.Quote(fmt.Sprintf("%v", v))
+			} else {
+				union += fmt.Sprintf("%d", v.Int())
+			}
+		}
 		if i != len(s.Values)-1 {
 			union += " | "
 		}
