@@ -164,13 +164,13 @@ func isEnum(t reflect.Type) bool {
 	return t.PkgPath() != ""
 }
 
-func getEnumStringValues(t reflect.Type) []string {
+func getTypedEnumValues(t reflect.Type) []reflect.Value {
 	pkg := t.PkgPath()
 	values, err := getEnumValues(pkg, t.String())
 	if err != nil {
 		panic(err)
 	}
-	enumStrValues := []string{}
+	enumStrValues := []reflect.Value{}
 	for _, v := range values {
 		reflectValue := reflect.New(t).Elem()
 		newVal := constant.Val(v)
@@ -187,9 +187,8 @@ func getEnumStringValues(t reflect.Type) []string {
 			fmt.Println(reflect.TypeOf(newVal), newVal, reflectValue, v.Kind(), t)
 			panic("unknown type")
 		}
-		strVal := fmt.Sprintf("%v", reflectValue)
 
-		enumStrValues = append(enumStrValues, strVal)
+		enumStrValues = append(enumStrValues, reflectValue)
 	}
 	return enumStrValues
 }
@@ -200,7 +199,7 @@ func (s *StructToTS) addTypeEnum(t reflect.Type, name, namespace string) (out *S
 		return out
 	}
 	out = MakeStruct(t, name, namespace)
-	out.Values = getEnumStringValues(t)
+	out.Values = getTypedEnumValues(t)
 	out.Type = Enum
 	s.seen[t] = out
 	s.structs = append(s.structs, out)
