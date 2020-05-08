@@ -1,6 +1,9 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // TODO write testcase for this
 type M struct {
@@ -33,8 +36,9 @@ func (e WeekDay) String() string {
 }
 
 type T struct {
-	W  WeekDay  `json:"weekday"`
-	W2 WeekDay2 `json:"weekday2"`
+	W WeekDay `json:"weekday"`
+	// W2 WeekDay2  `json:"weekday2"`
+	T time.Time `json:"date"`
 }
 
 type UserTag struct {
@@ -42,6 +46,7 @@ type UserTag struct {
 }
 
 type User struct {
+	M
 	FirstName  string    `json:"firstname"`
 	SecondName string    `json:"secondName"`
 	Tags       []UserTag `json:"tags"`

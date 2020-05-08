@@ -9,6 +9,7 @@ export namespace types {
   export interface T {
     weekday: types.WeekDay;
     weekday2: types.WeekDay2;
+    date: string;
   }
   //github.com/zmitry/go2typings/example/types.UserTag
   export interface UserTag {
