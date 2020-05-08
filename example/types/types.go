@@ -36,9 +36,9 @@ func (e WeekDay) String() string {
 }
 
 type T struct {
-	W  WeekDay   `json:"weekday"`
-	W2 WeekDay2  `json:"weekday2"`
-	T  time.Time `json:"date"`
+	W WeekDay `json:"weekday"`
+	// W2 WeekDay2  `json:"weekday2"`
+	T time.Time `json:"date"`
 }
 
 type UserTag struct {

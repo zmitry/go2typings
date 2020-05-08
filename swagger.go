@@ -1,14 +1,13 @@
 package go2typings
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 
 	"github.com/go-openapi/spec"
 )
 
-func (s *StructToTS) RenderToSwagger() (string, error) {
+func (s *StructToTS) RenderToSwagger() spec.Swagger {
 	def := spec.Definitions{}
 	swag := spec.Swagger{SwaggerProps: spec.SwaggerProps{
 		Definitions: def,
@@ -18,11 +17,7 @@ func (s *StructToTS) RenderToSwagger() (string, error) {
 		schema := s.GenerateOpenApi(st)
 		def[st.ReferenceName] = schema
 	}
-	res, err := json.MarshalIndent(swag, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return string(res), nil
+	return swag
 }
 
 func typeToSwagger(t reflect.Type, swaggerType spec.Schema, getTypeName GetTypeName) spec.Schema {
@@ -75,7 +70,6 @@ func typeToSwagger(t reflect.Type, swaggerType spec.Schema, getTypeName GetTypeN
 		swaggerType.SchemaProps = spec.MapProperty(&item).SchemaProps
 		return swaggerType
 	}
-	fmt.Println("unknown")
 	return swaggerType
 }
 
@@ -88,7 +82,7 @@ func (root *StructToTS) GenerateOpenApi(s *Struct) spec.Schema {
 		t.Typed(s.T.Kind().String(), "")
 		convertedValues := make([]interface{}, len(s.Values))
 		for i, v := range s.Values {
-			convertedValues[i] = v
+			convertedValues[i] = v.Interface()
 		}
 		t.WithEnum(convertedValues...)
 		return t
@@ -107,10 +101,8 @@ func (root *StructToTS) GenerateOpenApi(s *Struct) spec.Schema {
 	}
 	propertiesTypes.Typed("object", "")
 	for _, field := range s.Fields {
-		if field.TsType == "" {
-			scm := spec.Schema{}
-			propertiesTypes.SchemaProps.Properties[field.Name] = typeToSwagger(field.T, scm, root.getTypeName)
-		}
+		scm := spec.Schema{}
+		propertiesTypes.SchemaProps.Properties[field.Name] = typeToSwagger(field.T, scm, root.GetTypeName)
 	}
 	return t
 }

@@ -83,7 +83,7 @@ func (s *StructToTS) RenderTo(w io.Writer) (err error) {
 func (root *StructToTS) setStructTypes(s *Struct) {
 	for _, field := range s.Fields {
 		if field.TsType == "" {
-			field.TsType = typeToString(field.T, root.getTypeName)
+			field.TsType = typeToString(field.T, root.GetTypeName)
 		}
 	}
 }

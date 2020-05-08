@@ -8,6 +8,8 @@ import (
 	"path"
 	"reflect"
 	"strings"
+
+	"golang.org/x/tools/go/packages"
 )
 
 type (
@@ -202,8 +204,11 @@ func (s *StructToTS) addType(t reflect.Type, name, namespace string) (out *Struc
 	return
 }
 
-func (root *StructToTS) getTypeName(t reflect.Type) string {
-	return root.seen[t].ReferenceName
+func (root *StructToTS) GetTypeName(t reflect.Type) string {
+	if root.seen[t] != nil {
+		return root.seen[t].ReferenceName
+	}
+	return root.seen[indirect(t)].ReferenceName
 }
 
 func indirect(t reflect.Type) reflect.Type {
