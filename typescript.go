@@ -62,7 +62,6 @@ func (s *StructToTS) RenderTo(w io.Writer) (err error) {
 			if err != nil {
 				return err
 			}
-			continue
 		} else {
 			if err = st.RenderTo(s.opts, w); err != nil {
 				return err
