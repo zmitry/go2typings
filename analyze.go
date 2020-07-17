@@ -193,7 +193,7 @@ func (s *StructToTS) addType(t reflect.Type, name, namespace string) (out *Struc
 		s.visitType(sf.Type, fullFieldName, namespace)
 
 		if sf.Anonymous && k == reflect.Struct {
-			extendsType := s.seen[sft].Name
+			extendsType := s.seen[sft].ReferenceName
 			out.InheritedType = append(out.InheritedType, extendsType)
 			continue
 		}
