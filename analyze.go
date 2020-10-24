@@ -114,7 +114,6 @@ func (s *StructToTS) visitType(t reflect.Type, name, namespace string) {
 			s.addTypeEnum(t, "", "")
 		}
 	}
-
 }
 
 func isEnum(t reflect.Type) bool {

@@ -10,6 +10,7 @@ const (
 	MONDAY WeekDay = 2
 )
 
+// helllo this is week day
 type WeekDay2 string
 
 const (
@@ -36,8 +37,37 @@ func (e WeekDay) String() string {
 	}
 }
 
+// Super custom array
+type CustomArray []int
+
+// struct level comment
 type T struct {
-	W  WeekDay  `json:"weekday"`
-	W2 WeekDay2 `json:"weekday2"`
+	//body comment
+
+	W WeekDay `json:"weekday"` // field level comment
+	// kek
+	W2 WeekDay2 `json:"weekday2"` // kek
 	W3 WeekDay3 `json:"weekday3"`
+}
+
+type UserTag struct {
+	Tag string `json:"tag"`
+}
+
+// Hello
+type M struct {
+	// body comment
+	Username string `json:"Username2"` // field doc
+}
+
+// user
+type User struct {
+	M
+	NestedStruct struct {
+		UserTag
+	}
+	CustomArray *CustomArray `json:"k"`
+	FirstName   *string      `json:"firstname"`
+	SecondName  string       `json:"secondName"` // hello
+	Tags        []UserTag    `json:"tags"`       // dima
 }
